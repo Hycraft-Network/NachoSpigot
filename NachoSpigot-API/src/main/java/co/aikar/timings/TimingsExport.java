@@ -45,7 +45,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -81,19 +80,19 @@ class TimingsExport extends Thread {
      */
     static void reportTimings(CommandSender sender) {
         Map parent = createObject(
-            // Get some basic system details about the server
-            pair("version", Bukkit.getVersion()),
-            pair("maxplayers", Bukkit.getMaxPlayers()),
-            pair("start", TimingsManager.timingStart / 1000),
-            pair("end", System.currentTimeMillis() / 1000),
-            pair("sampletime", (System.currentTimeMillis() - TimingsManager.timingStart) / 1000)
+                // Get some basic system details about the server
+                pair("version", Bukkit.getVersion()),
+                pair("maxplayers", Bukkit.getMaxPlayers()),
+                pair("start", TimingsManager.timingStart / 1000),
+                pair("end", System.currentTimeMillis() / 1000),
+                pair("sampletime", (System.currentTimeMillis() - TimingsManager.timingStart) / 1000)
         );
         if (!TimingsManager.privacy) {
             appendObjectData(parent,
-                pair("server", Bukkit.getServerName()),
-                pair("motd", Bukkit.getServer().getMotd()),
-                pair("online-mode", Bukkit.getServer().getOnlineMode()),
-                pair("icon", Bukkit.getServer().getServerIcon().getData())
+                    pair("server", Bukkit.getServerName()),
+                    pair("motd", Bukkit.getServer().getMotd()),
+                    pair("online-mode", Bukkit.getServer().getOnlineMode()),
+                    pair("icon", Bukkit.getServer().getServerIcon().getData())
             );
         }
 
@@ -101,22 +100,22 @@ class TimingsExport extends Thread {
         RuntimeMXBean runtimeBean = ManagementFactory.getRuntimeMXBean();
 
         parent.put("system", createObject(
-                pair("timingcost", getCost()),
-                pair("name", System.getProperty("os.name")),
-                pair("version", System.getProperty("os.version")),
-                pair("jvmversion", System.getProperty("java.version")),
-                pair("arch", System.getProperty("os.arch")),
-                pair("maxmem", runtime.maxMemory()),
-                pair("cpu", runtime.availableProcessors()),
-                pair("runtime", ManagementFactory.getRuntimeMXBean().getUptime()),
-                pair("flags", StringUtils.join(runtimeBean.getInputArguments(), " ")),
-                pair("gc", toObjectMapper(ManagementFactory.getGarbageCollectorMXBeans(), new Function<GarbageCollectorMXBean, JSONPair>() {
-                    @Override
-                    public JSONPair apply(GarbageCollectorMXBean input) {
-                        return pair(input.getName(), toArray(input.getCollectionCount(), input.getCollectionTime()));
-                    }
-                }))
-            )
+                        pair("timingcost", getCost()),
+                        pair("name", System.getProperty("os.name")),
+                        pair("version", System.getProperty("os.version")),
+                        pair("jvmversion", System.getProperty("java.version")),
+                        pair("arch", System.getProperty("os.arch")),
+                        pair("maxmem", runtime.maxMemory()),
+                        pair("cpu", runtime.availableProcessors()),
+                        pair("runtime", ManagementFactory.getRuntimeMXBean().getUptime()),
+                        pair("flags", StringUtils.join(runtimeBean.getInputArguments(), " ")),
+                        pair("gc", toObjectMapper(ManagementFactory.getGarbageCollectorMXBeans(), new Function<GarbageCollectorMXBean, JSONPair>() {
+                            @Override
+                            public JSONPair apply(GarbageCollectorMXBean input) {
+                                return pair(input.getName(), toArray(input.getCollectionCount(), input.getCollectionTime()));
+                            }
+                        }))
+                )
         );
 
         Set<Material> tileEntityTypeSet = Sets.newHashSet();
@@ -143,68 +142,67 @@ class TimingsExport extends Thread {
                     continue;
                 }
                 handlers.put(id.id, toArray(
-                    group.id,
-                    id.name
+                        group.id,
+                        id.name
                 ));
             }
         }
 
         parent.put("idmap", createObject(
-            pair("groups", toObjectMapper(
-                TimingIdentifier.GROUP_MAP.values(), new Function<TimingIdentifier.TimingGroup, JSONPair>() {
-                @Override
-                public JSONPair apply(TimingIdentifier.TimingGroup group) {
-                    return pair(group.id, group.name);
-                }
-            })),
-            pair("handlers", handlers),
-            pair("worlds", toObjectMapper(TimingHistory.worldMap.entrySet(), new Function<Map.Entry<String, Integer>, JSONPair>() {
+                pair("groups", toObjectMapper(
+                        TimingIdentifier.GROUP_MAP.values(), new Function<TimingIdentifier.TimingGroup, JSONPair>() {
+                            @Override
+                            public JSONPair apply(TimingIdentifier.TimingGroup group) {
+                                return pair(group.id, group.name);
+                            }
+                        })),
+                pair("handlers", handlers),
+                pair("worlds", toObjectMapper(TimingHistory.worldMap.entrySet(), new Function<Map.Entry<String, Integer>, JSONPair>() {
                     @Override
                     public JSONPair apply(Map.Entry<String, Integer> input) {
                         return pair(input.getValue(), input.getKey());
                     }
                 })),
-            pair("tileentity",
-                toObjectMapper(tileEntityTypeSet, new Function<Material, JSONPair>() {
-                    @Override
-                    public JSONPair apply(Material input) {
-                        return pair(input.getId(), input.name());
-                    }
-                })),
-            pair("entity",
-                toObjectMapper(entityTypeSet, new Function<EntityType, JSONPair>() {
-                    @Override
-                    public JSONPair apply(EntityType input) {
-                        return pair(input.getTypeId(), input.name());
-                    }
-                }))
+                pair("tileentity",
+                        toObjectMapper(tileEntityTypeSet, new Function<Material, JSONPair>() {
+                            @Override
+                            public JSONPair apply(Material input) {
+                                return pair(input.getId(), input.name());
+                            }
+                        })),
+                pair("entity",
+                        toObjectMapper(entityTypeSet, new Function<EntityType, JSONPair>() {
+                            @Override
+                            public JSONPair apply(EntityType input) {
+                                return pair(input.getTypeId(), input.name());
+                            }
+                        }))
         ));
 
         // Information about loaded plugins
 
         parent.put("plugins", toObjectMapper(Bukkit.getPluginManager().getPlugins(),
-            new Function<Plugin, JSONPair>() {
-                @Override
-                public JSONPair apply(Plugin plugin) {
-                    return pair(plugin.getName(), createObject(
-                        pair("version", plugin.getDescription().getVersion()),
-                        pair("description", String.valueOf(plugin.getDescription().getDescription()).trim()),
-                        pair("website", plugin.getDescription().getWebsite()),
-                        pair("authors", StringUtils.join(plugin.getDescription().getAuthors(), ", "))
-                    ));
-                }
-            }));
-
+                new Function<Plugin, JSONPair>() {
+                    @Override
+                    public JSONPair apply(Plugin plugin) {
+                        return pair(plugin.getName(), createObject(
+                                pair("version", plugin.getDescription().getVersion()),
+                                pair("description", String.valueOf(plugin.getDescription().getDescription()).trim()),
+                                pair("website", plugin.getDescription().getWebsite()),
+                                pair("authors", StringUtils.join(plugin.getDescription().getAuthors(), ", "))
+                        ));
+                    }
+                }));
 
 
         // Information on the users Config
 
         parent.put("config", createObject(
-            pair("spigot", mapAsJSON(Bukkit.spigot().getSpigotConfig(), null)),
-            pair("bukkit", mapAsJSON(Bukkit.spigot().getBukkitConfig(), null)),
-            pair("paper", mapAsJSON(Bukkit.spigot().getPaperSpigotConfig(), null)),
-            pair("tacospigot", mapAsJSON(Bukkit.spigot().getTacoSpigotConfig(), null)),
-            pair("nachospigot", mapAsJSON(Bukkit.spigot().getNachoSpigotConfig(), null))
+                pair("spigot", mapAsJSON(Bukkit.spigot().getSpigotConfig(), null)),
+                pair("bukkit", mapAsJSON(Bukkit.spigot().getBukkitConfig(), null)),
+                pair("paper", mapAsJSON(Bukkit.spigot().getPaperSpigotConfig(), null)),
+                pair("tacospigot", mapAsJSON(Bukkit.spigot().getTacoSpigotConfig(), null)),
+                pair("nachospigot", mapAsJSON(Bukkit.spigot().getNachoSpigotConfig(), null))
         ));
 
         new TimingsExport(sender, parent, history).start();
@@ -284,7 +282,7 @@ class TimingsExport extends Thread {
         if (sender instanceof RemoteConsoleCommandSender) {
             sender.sendMessage(ChatColor.RED + "Warning: Timings report done over RCON will cause lag spikes.");
             sender.sendMessage(ChatColor.RED + "You should use " + ChatColor.YELLOW +
-                "/timings report" + ChatColor.RED + " in game or console.");
+                    "/timings report" + ChatColor.RED + " in game or console.");
             run();
         } else {
             super.start();
@@ -308,7 +306,15 @@ class TimingsExport extends Thread {
         try {
             HttpURLConnection con = (HttpURLConnection) new URL("http://timings.aikar.co/post").openConnection();
             con.setDoOutput(true);
-            con.setRequestProperty("User-Agent", "Spigot/" + Bukkit.getServerName() + "/" + InetAddress.getLocalHost().getHostName());
+
+            String host = "BrokenHost";
+
+            try {
+                host = InetAddress.getLocalHost().getHostName();
+            } catch (Exception ignored) {
+            }
+
+            con.setRequestProperty("User-Agent", "Spigot/" + Bukkit.getServerName() + "/" + host);
             con.setRequestMethod("POST");
             con.setInstanceFollowRedirects(false);
 
@@ -323,7 +329,7 @@ class TimingsExport extends Thread {
 
             if (con.getResponseCode() != 302) {
                 sender.sendMessage(
-                    ChatColor.RED + "Upload Error: " + con.getResponseCode() + ": " + con.getResponseMessage());
+                        ChatColor.RED + "Upload Error: " + con.getResponseCode() + ": " + con.getResponseMessage());
                 sender.sendMessage(ChatColor.RED + "Check your logs for more information");
                 if (response != null) {
                     Bukkit.getLogger().log(Level.SEVERE, response);
