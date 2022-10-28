@@ -4,14 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
 
-import me.elier.nachospigot.config.NachoConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -962,13 +955,13 @@ public class WorldServer extends World implements IAsyncTaskHandler {
 
             this.chunkProvider.saveChunks(flag, iprogressupdate);
             // CraftBukkit - ArrayList -> Collection
-            Collection<Chunk> arraylist = this.chunkProviderServer.a();
-
+            /*Collection<Chunk> arraylist = this.chunkProviderServer.a(); // Paper start
             for (Chunk value : arraylist) {
                 if (value != null && !this.manager.a(value.locX, value.locZ)) {
                     this.chunkProviderServer.queueUnload(value.locX, value.locZ);
                 }
             }
+            */ // Paper end
 
         }
     }

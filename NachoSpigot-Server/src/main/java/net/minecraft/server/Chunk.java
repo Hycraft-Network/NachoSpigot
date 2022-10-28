@@ -285,6 +285,8 @@ public class Chunk {
         this.g[i + j * 16] = true;
         this.k = true;
     }
+	
+    private void recheckGaps(boolean flag) { h(flag); } // Paper
 
     private void h(boolean flag) {
         this.world.methodProfiler.a("recheckGaps");
@@ -956,9 +958,9 @@ public class Chunk {
             this.tileEntities.remove(blockposition);
             // PaperSpigot end
         } else {
-            System.out.println("Attempted to place a tile entity (" + tileentity + ") at " + tileentity.position.getX() + "," + tileentity.position.getY() + "," + tileentity.position.getZ()
+            Chunk.c.warn("Attempted to place a tile entity (" + tileentity + ") at " + tileentity.position.getX() + "," + tileentity.position.getY() + "," + tileentity.position.getZ()
                 + " (" + org.bukkit.craftbukkit.util.CraftMagicNumbers.getMaterial(getType(blockposition)) + ") where there was no entity tile!");
-            System.out.println("Chunk coordinates: " + (this.locX * 16) + "," + (this.locZ * 16));
+            Chunk.c.warn("Chunk coordinates: " + (this.locX * 16) + "," + (this.locZ * 16));
             new Exception().printStackTrace();
             // CraftBukkit end
         }
@@ -1158,7 +1160,7 @@ public class Chunk {
 
         // PaperSpigot start
         int[] counts;
-        if (ItemStack.class.isAssignableFrom(oclass)) {
+        if (EntityItem.class.isAssignableFrom(oclass)) {
             counts = itemCounts;
         } else if (IInventory.class.isAssignableFrom(oclass)) {
             counts = inventoryEntityCounts;
@@ -1280,10 +1282,20 @@ public class Chunk {
 
         return new BlockPosition(blockposition.getX(), this.f[k], blockposition.getZ());
     }
+	
+    // Paper start
+    private boolean shouldRecheckGaps = false;
+    public void doGapCheck() {
+        if (shouldRecheckGaps) {
+            this.recheckGaps(false);
+            shouldRecheckGaps = false;
+        }
+    }
+    // Paper end
 
     public void b(boolean flag) {
         if (this.k && !this.world.worldProvider.o() && !flag) {
-            this.recheckGaps(this.world.isClientSide); // PaperSpigot - Asynchronous lighting updates
+            shouldRecheckGaps = true; // Paper
         }
 
         this.p = true;
@@ -1302,23 +1314,6 @@ public class Chunk {
             }
         }
 
-    }
-
-    /**
-     * PaperSpigot - Recheck gaps asynchronously.
-     */
-    public void recheckGaps(final boolean isClientSide) {
-        if (!world.paperSpigotConfig.useAsyncLighting) {
-            this.h(isClientSide);
-            return;
-        }
-
-        world.lightingExecutor.submit(new Runnable() {
-            @Override
-            public void run() {
-                Chunk.this.h(isClientSide);
-            }
-        });
     }
 
     public boolean isReady() {
@@ -1635,4 +1630,16 @@ public class Chunk {
 
         private EnumTileEntityState() {}
     }
+
+    // FlamePaper start - Hopper item lookup optimization
+    public int getItemCount(BlockPosition blockPosition) {
+        int k = MathHelper.floor(blockPosition.getY() / 16.0D);
+
+        k = Math.max(0, k);
+        k = Math.min(this.entitySlices.length - 1, k);
+
+        return itemCounts[k];
+    }
+    // FlamePaper end - Hopper item lookup optimization
+
 }

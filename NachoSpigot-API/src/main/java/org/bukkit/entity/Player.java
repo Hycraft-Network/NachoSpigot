@@ -1221,6 +1221,19 @@ public interface Player extends HumanEntity, Conversable, CommandSender, Offline
     // Paper - Undeprecate
     public void resetTitle();
 
+    /**
+     * Gets the player's current locale.
+     *
+     * The value of the locale String is not defined properly.
+     * <br>
+     * The vanilla Minecraft client will use lowercase language / country pairs
+     * separated by an underscore, but custom resource packs may use any format
+     * they wish.
+     *
+     * @return the player's locale
+     */
+    public String getLocale();
+
     // TacoSpigot start
     /**
      * Request that the player's client download and switch resource packs.
@@ -1332,7 +1345,7 @@ public interface Player extends HumanEntity, Conversable, CommandSender, Offline
         }
 
         /**
-         * Gets all players hidden with {@link hidePlayer(org.bukkit.entity.Player)}.
+         * Gets all players hidden with {@link Player#hidePlayer(Player)}.
          *
          * @return a Set with all hidden players
          */
@@ -1410,6 +1423,7 @@ public interface Player extends HumanEntity, Conversable, CommandSender, Offline
     Spigot spigot();
     // Spigot end
 
+    // Nacho start
     class NachoPlayer {
         /**
          * Sends an actionbar message to the player
@@ -1428,6 +1442,7 @@ public interface Player extends HumanEntity, Conversable, CommandSender, Offline
     }
 
     NachoPlayer nacho();
+    // Nacho end
 
     class Unsafe {
         /**

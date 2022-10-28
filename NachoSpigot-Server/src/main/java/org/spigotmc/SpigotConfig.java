@@ -51,8 +51,6 @@ public class SpigotConfig
     static int version;
     static Map<String, Command> commands;
     /*========================================================================*/
-    private static Metrics metrics;
-
     public static void init(File configFile)
     {
         CONFIG_FILE = configFile;
@@ -81,18 +79,6 @@ public class SpigotConfig
         for ( Map.Entry<String, Command> entry : commands.entrySet() )
         {
             MinecraftServer.getServer().server.getCommandMap().register( entry.getKey(), "Spigot", entry.getValue() );
-        }
-
-        if ( metrics == null )
-        {
-            try
-            {
-                metrics = new Metrics();
-                metrics.start();
-            } catch ( IOException ex )
-            {
-                Bukkit.getServer().getLogger().log( Level.SEVERE, "Could not start metrics service", ex );
-            }
         }
     }
 
@@ -229,7 +215,7 @@ public class SpigotConfig
         if ( version < 4 )
         {
             set( "settings.bungeecord", false );
-            System.out.println( "Oudated config, disabling BungeeCord support!" );
+            MinecraftServer.LOGGER.warn("Oudated config, disabling BungeeCord support!");
         }
         bungee = getBoolean( "settings.bungeecord", false );
     }
@@ -315,7 +301,7 @@ public class SpigotConfig
     private static void playerSample()
     {
         playerSample = getInt( "settings.sample-count", 12 );
-        System.out.println( "Server Ping Player Sample Count: " + playerSample );
+        MinecraftServer.LOGGER.info("Server Ping Player Sample Count: " + playerSample);
     }
 
     public static int playerShuffle;

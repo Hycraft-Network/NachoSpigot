@@ -7,8 +7,6 @@ import com.google.common.primitives.Floats;
 import dev.cobblesword.nachospigot.Nacho;
 import dev.cobblesword.nachospigot.events.PlayerIllegalBehaviourEvent;
 import io.netty.buffer.Unpooled;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -137,9 +135,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
     {
         this.h = false;
         ++this.e;
-        
-        // Feather start back port 1.12.2 keepalive handling
-        /* this.minecraftServer.methodProfiler.a("keepAlive");
+        this.minecraftServer.methodProfiler.a("keepAlive");
         if ((long) this.e - this.k > 40L)
         {
             this.k = (long) this.e;
@@ -148,23 +144,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
             this.sendPacket(new PacketPlayOutKeepAlive(this.i));
         }
 
-        this.minecraftServer.methodProfiler.b(); */
-        
-        final long currentTime = this.getCurrentMillis();
-        final long elapsedTime = currentTime - this.getLastPing();
-        if (isPendingPing) {
-            if (!this.processedDisconnect && elapsedTime >= KEEPALIVE_LIMIT) {
-                this.disconnect("Timed out");
-		return;
-            }
-        } else if (elapsedTime >= 15000L) {
-            isPendingPing = true;
-            this.setLastPing(currentTime);
-            this.setKeepAliveID((int) /*casting to an integer is the vanilla behavior*/ currentTime );
-            this.sendPacket(new PacketPlayOutKeepAlive(this.getKeepAliveID()));
-        }
-        // Feather end
-        
+        this.minecraftServer.methodProfiler.b();
         // CraftBukkit start
         for (int spam; (spam = this.chatThrottle) > 0 && !chatSpamField.compareAndSet(this, spam, spam - 1); ) ;
         /* Use thread-safe field access instead
@@ -185,63 +165,6 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
         }
 
     }
-    
-    
-    /* A 1.8.8 client is sending KeepAlive packets with 0 id
-     * while rendering the GUIDownloadWorld
-     * The server would disconnect the client
-     * so must we consider this issue */
-    private boolean isDownloading; 
-    
-    public boolean isDownloading() { return isDownloading; }
-
-    public static final long KEEPALIVE_LIMIT = 30000;
-    
-    private boolean noKeepalives; // Prevent spamming the warning
-    
-    //Feather start
-    @Override
-    public void a(PacketPlayInKeepAlive packetplayinkeepalive) {
-        if(noKeepalives) return;
-        if (isPendingPing && packetplayinkeepalive.a() == getKeepAliveID()) {
-            int i = (int) (this.d() - getLastPing());
-            this.player.ping = (this.player.ping * 3 + i) / 4;
-            isPendingPing = false; isDownloading = false;
-        }else {
-            if(packetplayinkeepalive.a() == 0) {
-                isDownloading = true;
-            }else {
-                noKeepalives = true;
-                c.warn("{} sent an invalid keepalive! pending keepalive: {} got id: {} expected id: {}", this.player.getName(), isPendingPing, packetplayinkeepalive.a(), this.getKeepAliveID());
-                this.minecraftServer.postToMainThread(() -> disconnect("invalid keepalive"));
-            }    	   
-        }
-    }
-    //Feather end
-
-       
-    // Feather start obf help
-    private boolean isPendingPing;
-   
-    private void setLastPing(final long lastPing) {
-        this.j = lastPing;
-    }
-     private long getLastPing() {
-        return this.j;
-    }
-   
-    private void setKeepAliveID(final int keepAliveID) {
-        this.i = keepAliveID;
-    }
-    
-    private int getKeepAliveID() {
-        return this.i;
-    }
-    
-    private long getCurrentMillis() {
-        return this.d();
-    }
-    // Feather end
 
     public NetworkManager getNetworkManager() {
         return this.networkManager;
@@ -379,6 +302,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                     this.lastYaw = to.getYaw();
                     this.lastPitch = to.getPitch();
 
+
                     // Skip the first time we do this
                     if (NachoConfig.firePlayerMoveEvent) { // Spigot - don't skip any move events
                         Location oldTo = to.clone();
@@ -387,7 +311,8 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
 
                         // If the event is cancelled we move the player back to their old location.
                         if (event.isCancelled())
-                        {
+                        {	
+                        Nacho.get().getLagCompensator().registerMovement(player, from); // Nacho
                             this.player.playerConnection.sendPacket(new PacketPlayOutPosition(from.getX(), from.getY(), from.getZ(), from.getYaw(), from.getPitch(), Collections.<PacketPlayOutPosition.EnumPlayerTeleportFlags>emptySet()));
                             return;
                         }
@@ -408,6 +333,8 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                             return;
                         }
                     }
+                    
+                    Nacho.get().getLagCompensator().registerMovement(player, to); // Nacho - register movement
                 }
 
                 if (this.checkMovement && !this.player.dead)
@@ -633,6 +560,7 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
             f1 = to.getPitch();
         }
 
+        Nacho.get().getLagCompensator().registerMovement(player, to); // Nacho - register teleport
         this.internalTeleport(d0, d1, d2, f, f1, set);
     }
 
@@ -1493,10 +1421,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
             double d0 = 36.0D;
 
             if (!flag) {
-                d0 = 9.0D;
+                // Increase the no player-player vision maximum reach
+                d0 = (NachoConfig.enableImprovedHitReg) ? 12.75D : 9.0D;
             }
 
-            if (this.player.h(entity) < d0) {
+            if (this.player.h(entity) <= d0) {
                 ItemStack itemInHand = this.player.inventory.getItemInHand(); // CraftBukkit
 
                 if (packetplayinuseentity.a() == PacketPlayInUseEntity.EnumEntityUseAction.INTERACT
@@ -1552,6 +1481,11 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                     }
 
                     this.player.attack(entity);
+                    // wuangg start - fix sword blocking desync
+                    if (this.player.isBlocking()) {
+                    	this.player.bU();
+                    }
+                    // wuangg end
 
                     // CraftBukkit start
                     if (itemInHand != null && itemInHand.count <= -1) {
@@ -2098,7 +2032,15 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
 
     }
 
+    public void a(PacketPlayInKeepAlive packetplayinkeepalive)
+    {
+        if (packetplayinkeepalive.a() == this.i) {
+            int i = (int) (this.d() - this.j);
 
+            this.player.ping = (this.player.ping * 3 + i) / 4;
+        }
+
+    }
 
     private long d() {
         return System.nanoTime() / 1000000L;
@@ -2118,21 +2060,23 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
         }
         // CraftBukkit end
     }
-
+	
+	
     public void a(PacketPlayInTabComplete packetplayintabcomplete) {
         PlayerConnectionUtils.ensureMainThread(packetplayintabcomplete, this, this.player.u());
-        // CraftBukkit start
-        if (chatSpamField.addAndGet(this, 10) > 500 && !this.minecraftServer.getPlayerList().isOp(this.player.getProfile())) {
-            this.disconnect("disconnect.spam");
-            return;
+        // CraftBukkit/Nacho start
+        if (!NachoConfig.disableDisconnectSpam) {
+            if (chatSpamField.addAndGet(this, 10) > 500 && !this.minecraftServer.getPlayerList().isOp(this.player.getProfile())) {
+                this.disconnect("disconnect.spam");
+                return;
+            }
         }
-        // CraftBukkit end
+        // CraftBukkit/Nacho end
         ArrayList arraylist = Lists.newArrayList();
         Iterator iterator = this.minecraftServer.tabCompleteCommand(this.player, packetplayintabcomplete.a(), packetplayintabcomplete.b()).iterator();
 
         while (iterator.hasNext()) {
             String s = (String) iterator.next();
-
             arraylist.add(s);
         }
 
@@ -2164,7 +2108,6 @@ public class PlayerConnection implements PacketListenerPlayIn, IUpdatePlayerList
                 }
             } catch (Throwable ex) {
                 this.isExploiter = true;
-                System.out.println(this.player.getName() + " has tried to crash the server...");
                 this.disconnect("Chill man, dam!");
                 return;
             }

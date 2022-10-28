@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import dev.cobblesword.nachospigot.commons.Constants;
+import dev.cobblesword.nachospigot.commons.Dictionary;
 import me.elier.nachospigot.config.NachoConfig;
 import net.minecraft.server.*;
 
@@ -41,15 +42,12 @@ import org.bukkit.craftbukkit.util.CraftMagicNumbers;
 import org.bukkit.craftbukkit.util.LongHash;
 import org.bukkit.entity.*;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.minecart.ExplosiveMinecart;
 import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.entity.minecart.PoweredMinecart;
 import org.bukkit.entity.minecart.SpawnerMinecart;
 import org.bukkit.entity.minecart.StorageMinecart;
 import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
-import org.bukkit.event.weather.ThunderChangeEvent;
-import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.SpawnChangeEvent;
 import org.bukkit.generator.BlockPopulator;
 import org.bukkit.generator.ChunkGenerator;
@@ -60,7 +58,6 @@ import org.bukkit.plugin.messaging.StandardMessenger;
 import org.bukkit.util.Vector;
 
 import net.jafama.FastMath;
-import me.elier.nachospigot.config.NachoConfig;
 
 public class CraftWorld implements World {
     public static final int CUSTOM_DIMENSION_OFFSET = 10;
@@ -1466,24 +1463,16 @@ public class CraftWorld implements World {
             {
                 net.minecraft.server.EnumParticle particle = null;
                 int[] extra = null;
-                for ( net.minecraft.server.EnumParticle p : net.minecraft.server.EnumParticle.values() )
-                {
-                    if ( effect.getName().startsWith( p.b().replace("_", "") ) )
-                    {
-                        particle = p;
-                        if ( effect.getData() != null ) 
-                        {
-                            if ( effect.getData().equals( org.bukkit.Material.class ) )
-                            {
-                                extra = new int[]{ id };
-                            } else 
-                            {
-                                extra = new int[]{ (data << 12) | (id & 0xFFF) };
-                            }
+                if ((particle = Dictionary.EFFECT_TO_PARTICLE.get(effect)) != null) {
+                    if (effect.getData() != null) {
+                        if (effect.getData().equals( org.bukkit.Material.class)) {
+                            extra = new int[]{id};
+                        } else {
+                            extra = new int[]{(data << 12) | (id & 0xFFF)};
                         }
-                        break;
                     }
                 }
+				
                 if ( extra == null )
                 {
                     extra = Constants.EMPTY_ARRAY;

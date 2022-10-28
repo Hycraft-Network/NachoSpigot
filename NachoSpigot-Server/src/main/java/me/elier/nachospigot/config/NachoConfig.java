@@ -39,7 +39,7 @@ public class NachoConfig {
         CONFIG_FILE = configFile;
         config = new YamlConfiguration();
         try {
-            System.out.println("Loading NachoSpigot config from " + configFile.getName());
+            NachoConfig.LOGGER.info("Loading NachoSpigot config from " + configFile.getName());
             config.load(CONFIG_FILE);
         } catch (IOException ignored) {
         } catch (InvalidConfigurationException ex) {
@@ -50,7 +50,7 @@ public class NachoConfig {
         File old_config = new File("nacho.json");
         if(old_config.exists()) migrate(old_config);
 
-        int configVersion = 6; // Update this every new configuration update
+        int configVersion = 7; // Update this every new configuration update
         version = getInt("config-version", configVersion);
         set("config-version", configVersion);
         c.setHeader(HEADER);
@@ -141,6 +141,8 @@ public class NachoConfig {
         c.addComment("settings.commands.permissions.version", "Enables a required permission to use /version");
         c.addComment("settings.commands.permissions.plugins", "Enables a required permission to use /plugins");
         c.addComment("settings.commands.enable-help-command", "Toggles the /help command");
+        c.addComment("settings.use-improved-hitreg", "Enables the usage of an improved hitreg based on lag compensation and small other details.");
+        c.addComment("settings.disable-disconnect-spam", "Disables that players can be kicked because of disconnect.spam.");
         NachoWorldConfig.loadComments();
     }
 
@@ -354,10 +356,15 @@ public class NachoConfig {
         enableFastMath = getBoolean("settings.enable-fastmath", false);
     }
 
-    public static int tileEntityTickingTime = 20;
+    public static int tileEntityTickingTime = 1;
 
     private static void tileEntityTickingTime() {
-        tileEntityTickingTime = getInt("settings.tile-entity-ticking-time", 20);
+        int i = getInt("settings.tile-entity-ticking-time", 1);
+        if(version < 7 && i == 20) {
+            i = 1;
+            set("settings.tile-entity-ticking-time", 1);
+        }
+        tileEntityTickingTime = i;
     }
 
     public static int itemDirtyTicks;
@@ -389,5 +396,17 @@ public class NachoConfig {
 
     private static void instantPlayInUseEntity() {
         instantPlayInUseEntity = getBoolean("settings.instant-interaction", false);
+    }
+
+    public static boolean enableImprovedHitReg;
+
+    private static void enableImprovedHitReg() {
+        enableImprovedHitReg = getBoolean("settings.use-improved-hitreg", false);
+    }
+
+    public static boolean disableDisconnectSpam;
+
+    private static void disableDisconnectSpam() {
+        disableDisconnectSpam = getBoolean("settings.disable-disconnect-spam", false);
     }
 }

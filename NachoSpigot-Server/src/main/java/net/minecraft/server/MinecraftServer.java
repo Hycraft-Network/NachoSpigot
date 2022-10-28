@@ -738,7 +738,7 @@ public abstract class MinecraftServer implements Runnable, ICommandListener, IAs
         if (autosavePeriod > 0 && this.ticks % autosavePeriod == 0) { // CraftBukkit
             SpigotTimings.worldSaveTimer.startTiming(); // Spigot
             this.methodProfiler.a("save");
-            this.playerList.savePlayers(); // Nacho - deobfuscate playerList
+            this.playerList.savePlayers();
             // Spigot Start
             // We replace this with saving each individual world as this.saveChunks(...) is broken,
             // and causes the main thread to sleep for random amounts of time depending on chunk activity

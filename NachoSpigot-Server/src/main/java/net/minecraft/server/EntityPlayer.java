@@ -130,7 +130,8 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
                 this.playerInteractManager.setGameMode(WorldSettings.EnumGamemode.getById(nbttagcompound.getInt("playerGameType")));
             }
         }
-
+		
+        if (this.locY > 300) this.locY = 200;
         this.getBukkitEntity().readExtraData(nbttagcompound); // CraftBukkit
     }
 
@@ -1047,12 +1048,12 @@ public class EntityPlayer extends EntityHuman implements ICrafting {
         String oldLocale = this.locale;
         this.locale = packetplayinsettings.a();
         if (!this.locale.equals(oldLocale)) {
-            CraftEventFactory.callPlayerLocaleChangeEvent(this, oldLocale, this.locale);
+            CraftEventFactory.callPlayerLocaleChangeEvent(this, this.locale); // Nacho - use new Bukkit API
         }
         // PaperSpigot end
         this.bR = packetplayinsettings.c();
         this.bS = packetplayinsettings.d();
-        this.getDataWatcher().watch(10, Byte.valueOf((byte) packetplayinsettings.e()));
+        this.getDataWatcher().watch(10, (byte) packetplayinsettings.e());
     }
 
     public EntityHuman.EnumChatVisibility getChatFlags() {

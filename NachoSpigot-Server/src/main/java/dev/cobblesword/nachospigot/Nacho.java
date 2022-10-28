@@ -1,6 +1,7 @@
 package dev.cobblesword.nachospigot;
 
 import dev.cobblesword.nachospigot.commands.KnockbackCommand;
+import dev.cobblesword.nachospigot.hitdetection.LagCompensator;
 import dev.cobblesword.nachospigot.protocol.MovementListener;
 import me.elier.nachospigot.config.NachoConfig;
 import xyz.sculas.nacho.anticrash.AntiCrash;
@@ -9,26 +10,30 @@ import dev.cobblesword.nachospigot.protocol.PacketListener;
 import net.minecraft.server.MinecraftServer;
 import dev.cobblesword.nachospigot.commands.SetMaxSlotCommand;
 import dev.cobblesword.nachospigot.commands.SpawnMobCommand;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.collect.Sets;
 import java.util.Set;
 
 public class Nacho {
-
+    public static final Logger LOGGER = LogManager.getLogger(Nacho.class);
     private static Nacho INSTANCE;
 
     private final Set<PacketListener> packetListeners = Sets.newConcurrentHashSet();
     private final Set<MovementListener> movementListeners = Sets.newConcurrentHashSet();
+
+    private final LagCompensator lagCompensator;
 
     public Nacho() {
         INSTANCE = this;
 
         AsyncExplosions.initExecutor(NachoConfig.useFixedPoolForTNT, NachoConfig.fixedPoolSize);
 
+        lagCompensator = new LagCompensator();
+
         if(NachoConfig.enableAntiCrash) {
-            System.out.println("[NS-AntiCrash] Activating Anti Crash.");
             this.packetListeners.add(new AntiCrash());
-            System.out.println("[NS-AntiCrash] Activated Anti Crash.");
         }
     }
 
@@ -65,4 +70,7 @@ public class Nacho {
 
     public Set<MovementListener> getMovementListeners() { return movementListeners; }
 
+    public LagCompensator getLagCompensator() {
+        return lagCompensator;
+    }
 }
